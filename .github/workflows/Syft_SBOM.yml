@@ -1,0 +1,50 @@
+name: Generate SBOM using Syft
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  generate-sbom:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'  # or whatever your project uses
+
+      - name: Build APK
+        run: ./gradlew assembleRelease
+
+      - name: Install Syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Find built APK
+        id: find_apk
+        run: |
+          APK_PATH=$(find . -name "*.apk" | head -n 1)
+          echo "APK_PATH=$APK_PATH" >> $GITHUB_OUTPUT
+
+      - name: Generate SBOM (SPDX)
+        run: |
+          syft "${{ steps.find_apk.outputs.APK_PATH }}" -o spdx-json > sbom.spdx.json
+
+      - name: Generate SBOM (CycloneDX)
+        run: |
+          syft "${{ steps.find_apk.outputs.APK_PATH }}" -o cyclonedx-json > sbom.cdx.json
+
+      - name: Upload SBOM Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom-files
+          path: |
+            sbom.spdx.json
+            sbom.cdx.json
