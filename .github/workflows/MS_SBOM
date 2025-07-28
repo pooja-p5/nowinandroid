@@ -1,0 +1,46 @@
+name: Generate SBOM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-sbom:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17' # or your project version
+
+      - name: Download SBOM Tool
+        run: |
+          curl -LO https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64
+          chmod +x sbom-tool-linux-x64
+          sudo mv sbom-tool-linux-x64 /usr/local/bin/sbom-tool
+
+      - name: Build APK (Optional, but helps identify deps)
+        run: ./gradlew assembleRelease
+
+      - name: Generate SBOM
+        run: |
+          sbom-tool generate \
+            -b . \
+            -bc . \
+            -pn "Testing_MS_SBOM_APK" \
+            -pv "1.0.0" \
+            -ps "https://github.com/pooja-p5/nowinandroid/" \
+            -nsb "https://testcompany.com/sbom" \
+            -m ./sbom
+
+      - name: Upload SBOM Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom
+          path: ./sbom
