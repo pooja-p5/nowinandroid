@@ -42,7 +42,7 @@ jobs:
           syft "${{ steps.find_apk.outputs.APK_PATH }}" -o cyclonedx-json > sbom.cdx.json
 
       - name: Upload SBOM Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom-files
           path: |
