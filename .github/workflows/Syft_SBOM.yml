@@ -1,4 +1,4 @@
-name: Generate SBOM from Source (Syft)
+name: Generate SBOM from Built Source (Syft)
 
 on:
   workflow_dispatch:
@@ -6,25 +6,36 @@ on:
     branches: [main]
 
 jobs:
-  sbom-source:
+  generate-sbom:
     runs-on: ubuntu-latest
-    name: Generate SBOM for Nowinandroid Source
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Grant permission to gradlew
+        run: chmod +x ./gradlew
+
+      - name: Build project (no APK)
+        run: ./gradlew build --no-daemon
+
       - name: Install Syft
         run: |
           curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 
-      - name: Generate SPDX SBOM from source
+      - name: Generate SBOM from build directory
         run: |
           mkdir -p sbom
-          syft dir:. -o spdx-json > sbom/nowinandroid-source.spdx.json
+          syft dir:./ --exclude ./buildSrc -o spdx-json > sbom/nowinandroid.spdx.json
 
-      - name: Upload SBOM artifact
+      - name: Upload SBOM
         uses: actions/upload-artifact@v4
         with:
-          name: nowinandroid-source-sbom
+          name: nowinandroid-sbom
           path: sbom/
