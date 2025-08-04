@@ -1,50 +1,30 @@
-name: Generate SBOM using Syft
+name: Generate SBOM from Source (Syft)
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+  push:
+    branches: [main]
 
 jobs:
-  generate-sbom:
+  sbom-source:
     runs-on: ubuntu-latest
+    name: Generate SBOM for Nowinandroid Source
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'  # or whatever your project uses
-
-      - name: Build APK
-        run: ./gradlew assembleRelease
+        uses: actions/checkout@v4
 
       - name: Install Syft
         run: |
           curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 
-      - name: Find built APK
-        id: find_apk
+      - name: Generate SPDX SBOM from source
         run: |
-          APK_PATH=$(find . -name "*.apk" | head -n 1)
-          echo "APK_PATH=$APK_PATH" >> $GITHUB_OUTPUT
+          mkdir -p sbom
+          syft dir:. -o spdx-json > sbom/nowinandroid-source.spdx.json
 
-      - name: Generate SBOM (SPDX)
-        run: |
-          syft "${{ steps.find_apk.outputs.APK_PATH }}" -o spdx-json > sbom.spdx.json
-
-      - name: Generate SBOM (CycloneDX)
-        run: |
-          syft "${{ steps.find_apk.outputs.APK_PATH }}" -o cyclonedx-json > sbom.cdx.json
-
-      - name: Upload SBOM Artifacts
+      - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sbom-files
-          path: |
-            sbom.spdx.json
-            sbom.cdx.json
+          name: nowinandroid-source-sbom
+          path: sbom/
