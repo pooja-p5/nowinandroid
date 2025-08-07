@@ -32,7 +32,7 @@ jobs:
         run: |
           mkdir -p ./sbom
           sbom-tool generate \
-            -b . \
+            -b ./app/src \
             -bc . \
             -pn "Testing_MS_SBOM_APK" \
             -pv "1.0.0" \
