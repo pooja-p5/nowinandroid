@@ -28,12 +28,16 @@ jobs:
 
       - name: Build the project (optional)
         run: ./gradlew assembleDebug
+        
+      - name: List build outputs
+        run: |
+          find ./app/build/outputs -type f  
 
       - name: Generate SBOM
         run: |
           mkdir -p ./_sbom
           sbom-tool generate \
-            -b . \
+            -b  ./app/build/outputs \
             -bc . \
             -pn "NowInAndroid" \
             -pv "1.0.0" \
