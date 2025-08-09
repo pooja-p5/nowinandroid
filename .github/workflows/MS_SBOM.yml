@@ -1,47 +1,47 @@
 name: Generate SBOM
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   generate-sbom:
+    name: Generate SBOM for Now in Android
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout source
         uses: actions/checkout@v3
 
-      - name: Set up JDK
+      - name: Set up Java
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17' # or your project version
+          java-version: '17'
 
-      - name: Download SBOM Tool
+      - name: Download MS SBOM Tool
         run: |
-          curl -LO https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64
-          chmod +x sbom-tool-linux-x64
-          sudo mv sbom-tool-linux-x64 /usr/local/bin/sbom-tool
+          wget https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64 -O sbom-tool
+          chmod +x sbom-tool
+          sudo mv sbom-tool /usr/local/bin/sbom-tool
 
-      - name: Build APK (Optional, but helps identify deps)
-        run: ./gradlew assembleRelease
+      - name: Build the project (optional)
+        run: ./gradlew assembleDebug
 
       - name: Generate SBOM
         run: |
-          mkdir -p ./sbom
           sbom-tool generate \
-            -b ./app/src \
+            -b . \
             -bc . \
-            -pn "Testing_MS_SBOM_APK" \
+            -pn "NowInAndroid" \
             -pv "1.0.0" \
-            -ps "https://github.com/pooja-p5/nowinandroid/" \
-            -nsb "https://testcompany.com/sbom" \
-            -m ./sbom
+            -ps "android" \
+            -nsb https://github.com/android/nowinandroid \
+            -m ./_sbom
 
       - name: Upload SBOM Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: sbom
-          path: ./sbom
+          path: ./_sbom
